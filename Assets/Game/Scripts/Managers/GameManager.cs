@@ -3,53 +3,50 @@ using UnityEngine.Tilemaps;
 
 public class GameManager : MonoBehaviour
 {
-    [Header("Tile Settings")]
-    public Tilemap groundTilemap;       // Слой с землей
-    public TileBase unfertilizedTile;   // Ссылка на неудобренный тайл
-    public TileBase fertilizedTile;     // Ссылка на удобренный тайл
+    public static GameManager Instance;
 
-    private int _unfertilizedCount;
+    public Tilemap groundTilemap;
+    public TileBase unfertileTile;
+    public TileBase fertileTile;
 
-    void Start()
+    private int _countUnfertileTile;
+
+    private void Awake()
     {
-        CountUnfertilizedTiles();
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
-    // Подсчет всех неудобренных плиток при старте
-    private void CountUnfertilizedTiles()
+    private void Start()
     {
-        _unfertilizedCount = 0;
         BoundsInt bounds = groundTilemap.cellBounds;
-
         foreach (Vector3Int pos in bounds.allPositionsWithin)
         {
             TileBase tile = groundTilemap.GetTile(pos);
-            if (tile != null && tile == unfertilizedTile)
+            if (tile == unfertileTile)
             {
-                _unfertilizedCount++;
+                _countUnfertileTile++;
             }
         }
-
-        Debug.Log($"Начальное количество неудобренных плиток: {_unfertilizedCount}");
     }
 
-    // Вызывается червяком при наступлении на плитку
-    public void FertilizeTile(Vector3Int position)
+    public void NewFertileTile()
     {
-        TileBase currentTile = groundTilemap.GetTile(position);
-
-        if (currentTile == unfertilizedTile)
+        _countUnfertileTile--;
+        if (_countUnfertileTile <= 0)
         {
-            // Заменяем тайл на удобренный
-            groundTilemap.SetTile(position, fertilizedTile);
-
-            _unfertilizedCount--;
-            Debug.Log($"Осталось неудобренных: {_unfertilizedCount}");
-
-            if (_unfertilizedCount <= 0)
-            {
-                Debug.Log("ПОБЕДА! Все плитки удобрены!");
-            }
+            AllTilesFertile();
         }
+    }
+
+    private void AllTilesFertile()
+    {
+        Debug.Log("Level Complete!");
     }
 }

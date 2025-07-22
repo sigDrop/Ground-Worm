@@ -1,97 +1,247 @@
+using System.Collections;
+using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
 public class WormController : MonoBehaviour
 {
+    [Header("WormSettings")]
+    [SerializeField] private GameObject _bodySegment;
+    [SerializeField] private int _startCountSegments;
+    [SerializeField] private float _moveDuration = .3f;
+
     [Header("References")]
-    [SerializeField] private Tilemap groundTilemap;
-    [SerializeField] private Tilemap boundaryTilemap;
-    [SerializeField] private GameManager gameManager;
+    [SerializeField] private Tilemap _groundTileMap;
+    [SerializeField] private Tilemap _boundaryTileMap;
+    [SerializeField] private LayerMask _interactbleLayer;
 
-    // Текущее положение в координатах сетки
-    private Vector3Int _currentCell;
-    private Vector3Int _currentDirection;
-    private Vector3Int _nextDirection;
-    private float _moveTimer;
+    private List<Transform> _wormSegments = new List<Transform>();// 0 - Голова, остальные - сегменты тела
 
-    void Start()
+    private bool _isCanMove = true;
+    private bool _isFalling = false;
+
+    private void Start()
     {
-        // Инициализация позиции
-        _currentCell = groundTilemap.WorldToCell(transform.position);
-        transform.position = groundTilemap.GetCellCenterWorld(_currentCell);
+        _wormSegments.Add(gameObject.transform);
 
-        // Начальное направление движения (вправо)
-        _nextDirection = Vector3Int.right;
+        SnapToGrid();
+
+        if (_startCountSegments != 0)
+        {
+            CreateSegmentsOnStart(_startCountSegments);
+        }
     }
 
-    void Update()
+    private void CreateSegmentsOnStart(int _countSegments)
     {
-        // Обработка ввода игрока
+        for (int i = 0; i < _countSegments; i++)
+        {
+            GameObject _newBodySegment = Instantiate(_bodySegment);
+
+            _newBodySegment.transform.position = new Vector3(_wormSegments[i].position.x - 1, _wormSegments[i].position.y, _wormSegments[i].position.z);
+
+            _wormSegments.Add(_newBodySegment.transform);
+        }
+    }
+
+    private void Update()
+    {
         HandleInput();
+        CheckAndApplyGravity();
     }
 
-    // Обработка управления
     private void HandleInput()
     {
-        bool moved = false;
-
-        if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow))
+        if (_isCanMove && !_isFalling)
         {
-            _nextDirection = Vector3Int.up;
-            moved = true;
-        }
-        else if (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow))
-        {
-            _nextDirection = Vector3Int.down;
-            moved = true;
-        }
-        else if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow))
-        {
-            _nextDirection = Vector3Int.left;
-            moved = true;
-        }
-        else if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow))
-        {
-            _nextDirection = Vector3Int.right;
-            moved = true;
-        }
-
-        if (moved)
-        {
-            Move();
+            if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow))
+            {
+                TryMove(Vector3.up);
+            }
+            if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow))
+            {
+                TryMove(Vector3.left);
+            }
+            if (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow))
+            {
+                TryMove(Vector3.down);
+            }
+            if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow))
+            {
+                TryMove(Vector3.right);
+            }
         }
     }
 
-    // Основная логика движения
-    private void Move()
+    private void TryMove(Vector3 _direction)
     {
-        // Применяем новое направление
-        _currentDirection = _nextDirection;
+        Vector3 _nextHeadPosition = transform.position + _direction;
 
-        // Целевая позиция в сетке
-        Vector3Int targetCell = _currentCell + _currentDirection;
+        Vector3Int _nextCell = _boundaryTileMap.WorldToCell(_nextHeadPosition);
 
-        // Проверка возможности движения
-        if (CanMoveTo(targetCell))
+        // Проверяем, что следующая плитка не граница
+        if (_boundaryTileMap.HasTile(_nextCell))
         {
-            // Обновляем позицию
-            _currentCell = targetCell;
-            transform.position = groundTilemap.GetCellCenterWorld(_currentCell);
+            return;
+        }
 
-            // Удобряем плитку
-            gameManager.FertilizeTile(_currentCell);
+        // Проверяем, что следующая плитка не сегмент
+        for (int i = 1; i < _wormSegments.Count; i++)
+        {
+            if (_nextHeadPosition == _wormSegments[i].position)
+            {
+                return;
+            }
+        }
+
+        Collider2D _appleColider = Physics2D.OverlapPoint(_nextHeadPosition, _interactbleLayer);
+
+        if (_appleColider != null)
+        {
+            GameObject _interactbleObject = _appleColider.gameObject;
+            if (_interactbleObject.tag == "Apple")
+            {
+                AddSegment();
+                Destroy(_interactbleObject);
+            }
+        }    
+
+        StartCoroutine(MoveSmoothly(_nextHeadPosition));
+
+        WormGroundInteraction.Instance.CheckTile(_nextCell);
+    }
+
+    private IEnumerator MoveSmoothly(Vector3 _direction)
+    {
+        _isCanMove = false;
+
+        // Сохраняем позиции ДО движения
+        List<Vector3> previousPositions = new List<Vector3>();
+        foreach (Transform segment in _wormSegments)
+        {
+            previousPositions.Add(segment.position);
+        }
+
+        // Анимируем все сегменты одновременно
+        float elapsedTime = 0f;
+
+        while (elapsedTime < _moveDuration)
+        {
+            // Голова двигается к новой позиции
+            _wormSegments[0].position = Vector3.Lerp(previousPositions[0], _direction, elapsedTime / _moveDuration);
+
+            // Все сегменты двигаются одновременно
+            for (int i = 1; i < _wormSegments.Count; i++)
+            {
+                _wormSegments[i].position = Vector3.Lerp(previousPositions[i], previousPositions[i - 1], elapsedTime / _moveDuration);
+            }
+
+            elapsedTime += Time.deltaTime;
+            yield return null;
+        }
+
+        // Точные позиции в конце
+        _wormSegments[0].position = _direction;
+        for (int i = 1; i < _wormSegments.Count; i++)
+        {
+            _wormSegments[i].position = previousPositions[i - 1];
+        }
+
+        SnapToGrid();
+
+        yield return StartCoroutine(ApplyGravitySmoothly());
+
+        _isCanMove = true;
+    }
+    
+    private bool IsCanFallDown()
+    {
+        foreach (Transform _segment in _wormSegments)
+        {
+            Vector3 _belowPosition = _segment.position + Vector3.down;
+
+            Vector3Int _cell = _boundaryTileMap.WorldToCell(_belowPosition);
+
+            Collider2D _appleColider = Physics2D.OverlapPoint(_belowPosition, _interactbleLayer);
+
+            if (_boundaryTileMap.HasTile(_cell) || _appleColider != null)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private IEnumerator ApplyGravitySmoothly()
+    {
+        while (IsCanFallDown())
+        {
+            _isFalling = true;
+
+            List<Vector3> previousPositions = new List<Vector3>();
+            foreach (Transform segment in _wormSegments)
+            {
+                previousPositions.Add(segment.position);
+            }
+
+            List<Vector3> targetPositions = new List<Vector3>();
+            foreach (Vector3 pos in previousPositions)
+            {
+                targetPositions.Add(pos + Vector3.down);
+            }
+
+            float elapsedTime = 0f;
+
+            while (elapsedTime < _moveDuration)
+            {
+                for (int i = 0; i < _wormSegments.Count; i++)
+                {
+                    _wormSegments[i].position = Vector3.Lerp(previousPositions[i], targetPositions[i], elapsedTime / _moveDuration);
+                }
+
+                elapsedTime += Time.deltaTime;
+                yield return null;
+            }
+
+            for (int i = 0; i < _wormSegments.Count; i++)
+            {
+                _wormSegments[i].position = targetPositions[i];
+            }
+
+            SnapToGrid();
+            
+        }
+        _isFalling = false;
+    }
+
+    private void CheckAndApplyGravity()
+    {
+        if (_isFalling || !_isCanMove) return;
+
+        if (IsCanFallDown())
+        {
+            StartCoroutine(ApplyGravitySmoothly());
         }
     }
 
-    // Проверка препятствий
-    private bool CanMoveTo(Vector3Int cell)
+    private void AddSegment()
     {
-        // Нельзя двигаться на границы
-        if (boundaryTilemap.HasTile(cell))
-            return false;
+        int _indexLastSegment = _wormSegments.Count - 1;
 
-        // Нельзя двигаться на удобренные плитки
-        TileBase tile = groundTilemap.GetTile(cell);
-        return tile != gameManager.fertilizedTile;
+        GameObject _newSegment = Instantiate(_bodySegment);
+
+        _newSegment.transform.position = new Vector3(_wormSegments[_indexLastSegment].position.x - 1, _wormSegments[_indexLastSegment].position.y, _wormSegments[_indexLastSegment].position.z);
+
+        _wormSegments.Add(_newSegment.transform);
+    }
+
+    private void SnapToGrid()
+    {
+        foreach (Transform _transformItem in _wormSegments)
+        {
+            Vector3Int _currentCell = _groundTileMap.WorldToCell(_transformItem.position);
+            _transformItem.position = _groundTileMap.GetCellCenterLocal(_currentCell);
+        }
     }
 }
