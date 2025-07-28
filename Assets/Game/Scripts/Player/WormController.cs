@@ -12,8 +12,8 @@ public class WormController : MonoBehaviour
     [SerializeField] private float _moveDuration = .3f;
 
     [Header("References")]
-    [SerializeField] private Tilemap _groundTileMap;
-    [SerializeField] private Tilemap _boundaryTileMap;
+    private Tilemap _groundTileMap;
+    private Tilemap _boundaryTileMap;
     [SerializeField] private LayerMask _interactbleLayer;
 
     private List<Transform> _wormSegments = new List<Transform>();// 0 - Голова, остальные - сегменты тела
@@ -21,25 +21,28 @@ public class WormController : MonoBehaviour
     private bool _isCanMove = true;
     private bool _isFalling = false;
 
+    public void Initialize(Tilemap groundTilemap, Tilemap boundaryTilemap)
+    {
+        _groundTileMap = groundTilemap;
+        _boundaryTileMap = boundaryTilemap;
+    }
+
     private void Start()
+    {
+
+    }
+
+    public void CreateSegmentsOnStart(int _countSegments)
     {
         _wormSegments.Add(gameObject.transform);
 
         SnapToGrid();
 
-        if (_startCountSegments != 0)
-        {
-            CreateSegmentsOnStart(_startCountSegments);
-        }
-    }
-
-    private void CreateSegmentsOnStart(int _countSegments)
-    {
         for (int i = 0; i < _countSegments; i++)
         {
             GameObject _newBodySegment = Instantiate(_bodySegment);
 
-            _newBodySegment.transform.position = new Vector3(_wormSegments[i].position.x - 1, _wormSegments[i].position.y, _wormSegments[i].position.z);
+            _newBodySegment.transform.position = new Vector3(_wormSegments[i].position.x - 1, _wormSegments[i].position.y, _wormSegments[i].position.z);                
 
             _wormSegments.Add(_newBodySegment.transform);
         }

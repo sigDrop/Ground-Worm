@@ -23,7 +23,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private void Start()
+    public void InitializeGrid()
     {
         BoundsInt bounds = groundTilemap.cellBounds;
         foreach (Vector3Int pos in bounds.allPositionsWithin)
@@ -47,6 +47,7 @@ public class GameManager : MonoBehaviour
 
     private void AllTilesFertile()
     {
+        //События при прохождении уровня
         Debug.Log("Level Complete!");
     }
 }
