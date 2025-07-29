@@ -34,6 +34,8 @@ public class GameManager : MonoBehaviour
                 _countUnfertileTile++;
             }
         }
+
+        TimerManager.Instance.StartTimer();
     }
 
     public void NewFertileTile()

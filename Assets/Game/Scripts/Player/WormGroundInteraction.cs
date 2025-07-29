@@ -46,5 +46,6 @@ public class WormGroundInteraction : MonoBehaviour
     {
         _groundTileMap.SetTile(_tilePosition, _fertileTile);
         GameManager.Instance.NewFertileTile();
+        AudioManager.Instance.PlayGroundSound();
     }
 }
