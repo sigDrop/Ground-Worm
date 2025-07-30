@@ -57,6 +57,14 @@ public class TimerManager : MonoBehaviour
         _timerText.text = string.Format("{0:00}:{1:00}.{2:00}", minutes, seconds, milliseconds);
     }
 
+    public string GetTime()
+    {
+        int minutes = Mathf.FloorToInt(_elapsedTime / 60f);
+        int seconds = Mathf.FloorToInt(_elapsedTime % 60f);
+        int milliseconds = Mathf.FloorToInt((_elapsedTime * 100f) % 100f);
+        return string.Format("{0:00}:{1:00}.{2:00}", minutes, seconds, milliseconds);
+    }
+
     public void ResetTimer()
     {
         _elapsedTime = 0f;

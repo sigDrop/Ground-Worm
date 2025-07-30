@@ -11,6 +11,8 @@ public class GameManager : MonoBehaviour
 
     private int _countUnfertileTile;
 
+    private int _currentLevel;
+
     private void Awake()
     {
         if (Instance == null)
@@ -23,9 +25,13 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public void InitializeGrid()
+    public void InitializeGrid(int levelNumber)
     {
+        _countUnfertileTile = 0;
+        _currentLevel = levelNumber;
+
         BoundsInt bounds = groundTilemap.cellBounds;
+
         foreach (Vector3Int pos in bounds.allPositionsWithin)
         {
             TileBase tile = groundTilemap.GetTile(pos);
@@ -34,6 +40,8 @@ public class GameManager : MonoBehaviour
                 _countUnfertileTile++;
             }
         }
+
+        TimerManager.Instance.ResetTimer();
 
         TimerManager.Instance.StartTimer();
     }
@@ -49,7 +57,7 @@ public class GameManager : MonoBehaviour
 
     private void AllTilesFertile()
     {
-        //События при прохождении уровня
-        Debug.Log("Level Complete!");
+        TimerManager.Instance.StopTimer();
+        UIManager.Instance.ShowVictoryPanel(_currentLevel, TimerManager.Instance.GetTime());
     }
 }

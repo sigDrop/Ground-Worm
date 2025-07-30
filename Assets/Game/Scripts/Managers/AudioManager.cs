@@ -32,7 +32,10 @@ public class AudioManager : MonoBehaviour
         }
 
         SetupAudioSources();
+    }
 
+    private void Start()
+    {
         PlayBackgroundMusic();
     }
 

@@ -3,8 +3,7 @@ using UnityEngine.Tilemaps;
 
 public class LevelLoader : MonoBehaviour
 {
-    [Header("Level to load")]
-    [SerializeField] private LevelData levelData;
+    public static LevelLoader Instance;
 
     [Header("TileMap Reference")]
     [SerializeField] private Tilemap groundTilemap;
@@ -21,12 +20,19 @@ public class LevelLoader : MonoBehaviour
     [Header("Boundary TileBase")]
     [SerializeField] private TileBase boundaryTile;
 
-    private void Start()
+    private void Awake()
     {
-        LoadLevel(levelData);
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
-    public void LoadLevel(LevelData data)
+    public void LoadLevel(LevelData data, int levelNumber)
     {
         ClearLevel();
 
@@ -37,7 +43,7 @@ public class LevelLoader : MonoBehaviour
 
         SpawnWorm(data);
 
-        GameManager.Instance.InitializeGrid();
+        GameManager.Instance.InitializeGrid(levelNumber);
     }
 
     private void LoadGroundTiles(LevelData data)
@@ -94,5 +100,9 @@ public class LevelLoader : MonoBehaviour
         // Удаляем голову
         GameObject head = GameObject.FindGameObjectWithTag("Player");
         if (head) Destroy(head);
+
+        // Удаляем сегменты тела
+        GameObject[] wormBody = GameObject.FindGameObjectsWithTag("Body");
+        foreach (GameObject body in wormBody) Destroy(body);
     }
 }
