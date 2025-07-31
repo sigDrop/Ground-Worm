@@ -1,57 +1,93 @@
 using System.Collections;
 using System.Collections.Generic;
-using TMPro;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
 public class WormController : MonoBehaviour
 {
+    public static WormController Instance { get; private set; }
+
     [Header("WormSettings")]
-    [SerializeField] private GameObject _bodySegment;
-    [SerializeField] private int _startCountSegments;
+    [SerializeField, Tooltip("Префаб сегмента тела червяка")] private GameObject _bodySegment;
     [SerializeField] private float _moveDuration = .3f;
 
-    [Header("References")]
-    private Tilemap _groundTileMap;
-    private Tilemap _boundaryTileMap;
+    [Header("Interactable Layers")]
     [SerializeField] private LayerMask _interactbleLayer;
 
-    private List<Transform> _wormSegments = new List<Transform>();// 0 - Голова, остальные - сегменты тела
+    private List<Transform> _wormSegments = new List<Transform>();// 0 - Голова, следующие - сегменты тела
+
+    private Tilemap _groundTileMap;
+    private Tilemap _boundaryTileMap;
 
     private bool _isCanMove = true;
     private bool _isFalling = false;
 
-    public void Initialize(Tilemap groundTilemap, Tilemap boundaryTilemap)
+    private void Awake()
     {
-        _groundTileMap = groundTilemap;
-        _boundaryTileMap = boundaryTilemap;
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
     private void Start()
     {
-
+        _groundTileMap = TilesManager.Instance.GroundTileMap;
+        _boundaryTileMap = TilesManager.Instance.BoundaryTileMap;
     }
 
-    public void CreateSegmentsOnStart(int _countSegments)
+    private void Update()
     {
+        if (GameManager.Instance.LevelIsStart)
+        {
+            HandleInput();
+            CheckAndApplyGravity();
+        }
+    }
+
+    /// <summary>
+    /// Подготовка червяка к уровню
+    /// </summary>
+    /// <param name="startPosition">Стартовая позиция</param>
+    /// <param name="countSegments">Количество сегментов</param>
+    public void PreparingToGame(Vector3 startPosition, int countSegments)
+    {
+        _wormSegments.Clear();
         _wormSegments.Add(gameObject.transform);
 
-        SnapToGrid();
+        SetWormHeadPosition(startPosition);
+        CreateSegmentsOnStart(countSegments);
+    }
 
-        for (int i = 0; i < _countSegments; i++)
+    /// <summary>
+    /// Создание сегментов на старте уровня
+    /// </summary>
+    /// <param name="countSegments">Количество сегментов</param>
+    public void CreateSegmentsOnStart(int countSegments)
+    {
+        for (int i = 0; i < countSegments; i++)
         {
             GameObject _newBodySegment = Instantiate(_bodySegment);
 
-            _newBodySegment.transform.position = new Vector3(_wormSegments[i].position.x - 1, _wormSegments[i].position.y, _wormSegments[i].position.z);                
+            _newBodySegment.transform.position = GetSegmentSpawnPosition(i);
 
             _wormSegments.Add(_newBodySegment.transform);
         }
     }
 
-    private void Update()
+    private void SetWormHeadPosition(Vector3 position)
     {
-        HandleInput();
-        CheckAndApplyGravity();
+        gameObject.transform.position = position;
+        SnapToGrid();
+    }
+
+    private Vector3 GetSegmentSpawnPosition(int segmentIndex)
+    {
+        return _wormSegments[segmentIndex].position + Vector3.left;
     }
 
     private void HandleInput()
@@ -234,7 +270,7 @@ public class WormController : MonoBehaviour
 
         GameObject _newSegment = Instantiate(_bodySegment);
 
-        _newSegment.transform.position = new Vector3(_wormSegments[_indexLastSegment].position.x - 1, _wormSegments[_indexLastSegment].position.y, _wormSegments[_indexLastSegment].position.z);
+        _newSegment.transform.position = GetSegmentSpawnPosition(_indexLastSegment);
 
         _wormSegments.Add(_newSegment.transform);
     }

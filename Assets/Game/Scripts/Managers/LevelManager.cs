@@ -10,6 +10,8 @@ public class LevelManager : MonoBehaviour
     
     private int _currentLevel = 0;
 
+    public int GetCurrentLevel => _currentLevel;
+
     private void Awake()
     {
         if (Instance == null)
@@ -33,16 +35,17 @@ public class LevelManager : MonoBehaviour
         }
     }
 
-    public int GetCurrentLevel()
-    {
-        return _currentLevel;
-    }
+    
 
     public void LoadNextLevel()
     {
         if (_currentLevel + 1 < _levelsData.Count)
         {
             LoadLevelByIndex(_currentLevel + 1);
+        }
+        else
+        {
+            UIManager.Instance.ShowLevelListPanel();
         }
     }
 }

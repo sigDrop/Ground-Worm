@@ -147,7 +147,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      GroundWormLogo_0: -7093772868272283746
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

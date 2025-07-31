@@ -10,7 +10,7 @@ public class LevelNavigationButtons : MonoBehaviour
 
     public void ReplayLevelClick()
     {
-        int _currentLevel = LevelManager.Instance.GetCurrentLevel();
+        int _currentLevel = LevelManager.Instance.GetCurrentLevel;
         LevelManager.Instance.LoadLevelByIndex(_currentLevel);
         UIManager.Instance.HideVictoryPanel();
     }
@@ -19,5 +19,6 @@ public class LevelNavigationButtons : MonoBehaviour
     {
         UIManager.Instance.ShowLevelListPanel();
         UIManager.Instance.HideVictoryPanel();
+        GameManager.Instance.StopGame();
     }
 }

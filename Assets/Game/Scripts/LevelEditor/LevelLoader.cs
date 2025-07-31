@@ -3,22 +3,17 @@ using UnityEngine.Tilemaps;
 
 public class LevelLoader : MonoBehaviour
 {
-    public static LevelLoader Instance;
+    public static LevelLoader Instance { get; private set; }
 
-    [Header("TileMap Reference")]
-    [SerializeField] private Tilemap groundTilemap;
-    [SerializeField] private Tilemap boundaryTilemap;
+    [Header("Apple Prefab Reference")]
+    [SerializeField] private GameObject _applePrefab;
 
-    [Header("Prefabs Reference")]
-    [SerializeField] private GameObject applePrefab;
-    [SerializeField] private GameObject wormHeadPrefab;
+    private Tilemap _groundTileMap;
+    private Tilemap _boundaryTileMap;
 
-    [Header("Ground TileBase")]
-    [SerializeField] private TileBase unfertilizedTile;
-    [SerializeField] private TileBase fertilizedTile;
-
-    [Header("Boundary TileBase")]
-    [SerializeField] private TileBase boundaryTile;
+    private TileBase _unfertileTile;
+    private TileBase _fertileTile;
+    private TileBase _boundaryTile;
 
     private void Awake()
     {
@@ -32,28 +27,48 @@ public class LevelLoader : MonoBehaviour
         }
     }
 
+    private void Start()
+    {
+        _groundTileMap = TilesManager.Instance.GroundTileMap;
+        _boundaryTileMap = TilesManager.Instance.BoundaryTileMap;
+
+        _unfertileTile = TilesManager.Instance.UnfertileTile;
+        _fertileTile = TilesManager.Instance.FertileTile;
+        _boundaryTile = TilesManager.Instance.BoundaryTile;
+    }
+
     public void LoadLevel(LevelData data, int levelNumber)
     {
         ClearLevel();
 
         LoadGroundTiles(data);
+
         LoadBoundaryTiles(data);
 
         SpawnApples(data);
 
         SpawnWorm(data);
-
-        GameManager.Instance.InitializeGrid(levelNumber);
     }
 
     private void LoadGroundTiles(LevelData data)
     {
+        int countUnfertileTile = 0;
         foreach (GroundTileData tileData in data.groundTiles)
         {
             Vector3Int cell = new Vector3Int(tileData.position.x, tileData.position.y, 0);
-            TileBase tileToSet = tileData.type == GroundTileType.Fertilized ? fertilizedTile : unfertilizedTile;
-            groundTilemap.SetTile(cell, tileToSet);
+            TileBase tileToSet;
+            if (tileData.type == GroundTileType.Fertilized)
+            {
+                tileToSet = _fertileTile;
+            }
+            else
+            {
+                tileToSet = _unfertileTile;
+                countUnfertileTile++;
+            }
+            _groundTileMap.SetTile(cell, tileToSet);
         }
+        GameManager.Instance.InitializeLevel(data.levelNumber, countUnfertileTile);
     }
 
     private void LoadBoundaryTiles(LevelData data)
@@ -61,7 +76,7 @@ public class LevelLoader : MonoBehaviour
         foreach (BoundaryTileData tileData in data.boundaryTiles)
         {
             Vector3Int cell = new Vector3Int(tileData.position.x, tileData.position.y, 0);
-            boundaryTilemap.SetTile(cell, boundaryTile);
+            _boundaryTileMap.SetTile(cell, _boundaryTile);
         }
     }
 
@@ -69,37 +84,26 @@ public class LevelLoader : MonoBehaviour
     {
         foreach (Vector2Int pos in data.applePositions)
         {
-            Vector3 worldPos = groundTilemap.GetCellCenterWorld(new Vector3Int(pos.x, pos.y, 0));
-            Instantiate(applePrefab, worldPos, Quaternion.identity);
+            Vector3 worldPos = _groundTileMap.GetCellCenterWorld(new Vector3Int(pos.x, pos.y, 0));
+            Instantiate(_applePrefab, worldPos, Quaternion.identity);
         }
     }
-    private void SpawnWorm(LevelData data)
+    private void SpawnWorm(LevelData data) 
     {
-        Vector3 headWorldPos = groundTilemap.GetCellCenterWorld(
+        Vector3 headWorldPos = _groundTileMap.GetCellCenterWorld(
             new Vector3Int(data.wormStartPos.x, data.wormStartPos.y, 0));
 
-        GameObject wormHead = Instantiate(wormHeadPrefab, headWorldPos, Quaternion.identity);
-        WormController worm = wormHead.GetComponent<WormController>();
-
-        if (worm != null)
-        {
-            worm.Initialize(groundTilemap, boundaryTilemap);
-            worm.CreateSegmentsOnStart(data.wormStartSegments);
-        }
+        WormController.Instance.PreparingToGame(headWorldPos, data.wormStartSegments);
     }
 
     private void ClearLevel()
     {
-        groundTilemap.ClearAllTiles();
-        boundaryTilemap.ClearAllTiles();
+        _groundTileMap.ClearAllTiles();
+        _boundaryTileMap.ClearAllTiles();
 
         // ”дал€ем €блоки
         GameObject[] apples = GameObject.FindGameObjectsWithTag("Apple");
         foreach (GameObject apple in apples) Destroy(apple);
-
-        // ”дал€ем голову
-        GameObject head = GameObject.FindGameObjectWithTag("Player");
-        if (head) Destroy(head);
 
         // ”дал€ем сегменты тела
         GameObject[] wormBody = GameObject.FindGameObjectsWithTag("Body");

@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class UIManager : MonoBehaviour
 {
-    public static UIManager Instance;
+    public static UIManager Instance { get; private set; }
 
     [Header("Menu UI Reference")]
     [SerializeField] private GameObject _menuUI;

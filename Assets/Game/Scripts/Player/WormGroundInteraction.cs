@@ -3,14 +3,12 @@ using UnityEngine.Tilemaps;
 
 public class WormGroundInteraction : MonoBehaviour
 {
-    public static WormGroundInteraction Instance;
+    public static WormGroundInteraction Instance { get; private set; }
 
-    [Header("TileMaps References")]
-    [SerializeField] private Tilemap _groundTileMap;
+    private Tilemap _groundTileMap;
 
-    [Header("TileAssets References")]
-    [SerializeField] private TileBase _unfertileTile;
-    [SerializeField] private TileBase _fertileTile;
+    private TileBase _unfertileTile;
+    private TileBase _fertileTile;
 
     private void Awake()
     {
@@ -24,6 +22,14 @@ public class WormGroundInteraction : MonoBehaviour
         }
     }
 
+    private void Start()
+    {
+        _groundTileMap = TilesManager.Instance.GroundTileMap;
+
+        _unfertileTile = TilesManager.Instance.UnfertileTile;
+        _fertileTile = TilesManager.Instance.FertileTile;
+    }
+
     /// <summary>
     /// Проверка, что плитку можно удобрить
     /// </summary>
@@ -32,10 +38,9 @@ public class WormGroundInteraction : MonoBehaviour
     {
         TileBase _currentTile = _groundTileMap.GetTile(_tilePosition);
         
-        if (_currentTile == _unfertileTile)
-        {
-            FertilizeTile(_tilePosition);
-        }
+        if (_currentTile == _fertileTile) return;
+
+        FertilizeTile(_tilePosition);
     }
 
     /// <summary>

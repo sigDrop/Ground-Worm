@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class TimerManager : MonoBehaviour
 {
-    public static TimerManager Instance;
+    public static TimerManager Instance { get; private set; }
 
     [Header("UI Timer Text")]
     [SerializeField] private TMP_Text _timerText;
@@ -16,7 +16,6 @@ public class TimerManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            DontDestroyOnLoad(gameObject);
         }
         else
         {
