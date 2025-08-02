@@ -52,8 +52,11 @@ public class GameManager : MonoBehaviour
     private void AllTilesFertile()
     {
         _isLevelStart = false;
+        StopGame();
         TimerManager.Instance.StopTimer();
         UIManager.Instance.ShowVictoryPanel(_currentLevel, TimerManager.Instance.GetTime());
+        LevelsProgress.UnlockLevel(_currentLevel + 1);
+        LevelsListConstructor.Instance.UnlockButton(_currentLevel+1);
     }
 
     public void StopGame()

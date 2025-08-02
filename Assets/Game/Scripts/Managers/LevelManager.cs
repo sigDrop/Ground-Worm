@@ -12,6 +12,8 @@ public class LevelManager : MonoBehaviour
 
     public int GetCurrentLevel => _currentLevel;
 
+    public int GetIndexLastLevel => _levelsData.Count - 1;
+
     private void Awake()
     {
         if (Instance == null)
@@ -28,6 +30,8 @@ public class LevelManager : MonoBehaviour
     {
         if (_levelIndex < _levelsData.Count && _levelIndex >= 0)
         {
+            if (_levelIndex > LevelsProgress.GetLastUnlockedLevel()) return;
+
             _currentLevel = _levelIndex;
 
             LevelLoader.Instance.LoadLevel(_levelsData[_currentLevel], _currentLevel);

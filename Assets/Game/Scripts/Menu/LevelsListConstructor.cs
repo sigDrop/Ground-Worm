@@ -1,7 +1,10 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class LevelsListConstructor : MonoBehaviour
 {
+    public static LevelsListConstructor Instance {  get; private set; }
+
     [Header("Scroll View Content Ref")]
     [SerializeField] private Transform _buttonsContainer;
 
@@ -11,6 +14,20 @@ public class LevelsListConstructor : MonoBehaviour
     [SerializeField] private int _levelsCount;
 
     private bool _isInitialaized = false;
+
+    private List<OpenLevelButton> _buttonLevelsList = new List<OpenLevelButton>();
+
+    private void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
 
     private void Start()
     {
@@ -35,7 +52,18 @@ public class LevelsListConstructor : MonoBehaviour
 
         OpenLevelButton _levelButtonLogic = _newButton.GetComponent<OpenLevelButton>();
 
-        _levelButtonLogic?.SetupButton(_levelNumber);
+        _buttonLevelsList.Add(_levelButtonLogic);
+
+        bool isButtonLocked = _levelNumber > LevelsProgress.GetLastUnlockedLevel() ? true : false;
+
+        _levelButtonLogic?.SetupButton(_levelNumber, isButtonLocked);
     }
 
+    public void UnlockButton(int indexButton)
+    {
+        if (indexButton >= 0 &&  indexButton < _buttonLevelsList.Count)
+        {
+            _buttonLevelsList[indexButton].UnlockButton();
+        }    
+    }    
 }

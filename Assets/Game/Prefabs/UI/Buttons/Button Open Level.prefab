@@ -282,4 +282,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 011bb54d59b188746b928b24bcec3118, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _imageButtonUnlocked: {fileID: 21300000, guid: 9dbfb1ef86ce3db469cf9edf7bc1ac9f, type: 3}
+  _imageButtonLocked: {fileID: 21300000, guid: 2459327449f72ed4f982f47543f9ff4b, type: 3}
   _buttonText: {fileID: 8270535017268255610}
