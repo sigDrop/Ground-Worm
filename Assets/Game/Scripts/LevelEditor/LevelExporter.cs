@@ -18,6 +18,7 @@ public class LevelExporter : MonoBehaviour
     [Header("Export Settings")]
     [SerializeField] private string saveFolder = "Assets/Game/ScriptableObjects/LevelsData/";
 
+#if UNITY_EDITOR
     [ContextMenu("Export Level")]
     public void ExportLevel()
     {
@@ -91,4 +92,5 @@ public class LevelExporter : MonoBehaviour
         }
         return index;
     }
+#endif
 }
